@@ -7,21 +7,36 @@ from telegram.ext import (
     Application,
     CommandHandler,
     MessageHandler,
+    CallbackQueryHandler,
+    PollAnswerHandler,
     ContextTypes,
     filters,
 )
 
 from database import init_db, add_user, get_user_count
+
 from handlers.ai import ai_chat
+
 from handlers.games import (
     games_menu,
     dice,
     dart,
-    quiz,
     guess,
     guess_answer,
 )
+
 from handlers.admin import owner
+
+from handlers.quiz import (
+    quiz,
+    quiz_subject,
+    quiz_difficulty,
+    quiz_next,
+    quiz_stop,
+    quiz_close,
+    quiz_back_subjects,
+    quiz_answer,
+)
 
 from handlers.moderator import (
     moderator_panel,
@@ -125,27 +140,44 @@ from handlers.moderator import (
     unblacklist,
 )
 
+
+# ============================================================
+# ENVIRONMENT
+# ============================================================
+
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 if not BOT_TOKEN:
-    raise RuntimeError("BOT_TOKEN is missing from .env")
+    raise RuntimeError(
+        "BOT_TOKEN is missing from .env"
+    )
 
+
+# ============================================================
+# LOGGING
+# ============================================================
 
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    format=(
+        "%(asctime)s - %(name)s - "
+        "%(levelname)s - %(message)s"
+    ),
     level=logging.INFO,
 )
 
 logger = logging.getLogger(__name__)
 
 
-# =========================
-# MAIN COMMANDS
-# =========================
+# ============================================================
+# START
+# ============================================================
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
     user = update.effective_user
 
     add_user(
@@ -159,55 +191,85 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🤖 SIMON AI HUB\n\n"
         "Your all-in-one Telegram AI assistant.\n\n"
         "💬 Send me a message to chat with the AI.\n"
-        "🎮 Use /games to play games.\n"
-        "👑 Use /owner to see the bot owner.\n"
+        "🎮 Use /games for games.\n"
+        "🧠 Use /quiz for the AI quiz.\n"
+        "👑 Use /owner for the bot owner.\n"
         "🛡️ Use /modhelp for moderator commands.\n\n"
         "🚀 More tools coming soon!"
     )
 
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ============================================================
+# HELP
+# ============================================================
+
+async def help_command(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
     await update.message.reply_text(
         "🆘 SIMON AI HUB HELP\n\n"
+
+        "🤖 GENERAL\n"
         "/start - Start the bot\n"
         "/help - Show help\n"
         "/stats - Bot statistics\n"
         "/about - About the bot\n"
         "/owner - Bot owner\n\n"
+
         "🎮 GAMES\n"
-        "/games\n"
-        "/dice\n"
-        "/dart\n"
-        "/quiz\n"
-        "/guess\n\n"
+        "/games - Games menu\n"
+        "/dice - Roll dice\n"
+        "/dart - Throw dart\n"
+        "/guess - Guess the number\n\n"
+
+        "🧠 AI QUIZ\n"
+        "/quiz - Start AI quiz\n\n"
+
         "🛡️ MODERATION\n"
-        "/modhelp\n"
-        "/modpanel\n\n"
+        "/modhelp - Moderator commands\n"
+        "/modpanel - Moderator panel\n\n"
+
         "💬 Send a normal message to chat with the AI."
     )
 
 
-async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ============================================================
+# STATS
+# ============================================================
+
+async def stats(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
     count = get_user_count()
 
     await update.message.reply_text(
-        f"📊 SIMON AI HUB STATISTICS\n\n"
+        "📊 SIMON AI HUB STATISTICS\n\n"
         f"👥 Total Users: {count}"
     )
 
 
-async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ============================================================
+# ABOUT
+# ============================================================
+
+async def about(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE
+):
     await update.message.reply_text(
         "🤖 SIMON AI HUB\n\n"
-        "An all-in-one Telegram AI bot created by Simon Tech.\n\n"
+        "An all-in-one Telegram AI bot "
+        "created by Simon Tech.\n\n"
         "👨‍💻 Developer: @mrdarkdev\n"
         "🚀 Powered by Python + OpenAI."
     )
 
 
-# =========================
+# ============================================================
 # ERROR HANDLER
-# =========================
+# ============================================================
 
 async def error_handler(
     update: object,
@@ -219,9 +281,9 @@ async def error_handler(
     )
 
 
-# =========================
+# ============================================================
 # MAIN
-# =========================
+# ============================================================
 
 def main():
 
@@ -234,9 +296,9 @@ def main():
         .build()
     )
 
-    # =========================
+    # ========================================================
     # MAIN COMMANDS
-    # =========================
+    # ========================================================
 
     application.add_handler(
         CommandHandler("start", start)
@@ -258,9 +320,9 @@ def main():
         CommandHandler("owner", owner)
     )
 
-    # =========================
+    # ========================================================
     # GAMES
-    # =========================
+    # ========================================================
 
     application.add_handler(
         CommandHandler("games", games_menu)
@@ -275,24 +337,79 @@ def main():
     )
 
     application.add_handler(
-        CommandHandler("quiz", quiz)
-    )
-
-    application.add_handler(
         CommandHandler("guess", guess)
     )
 
-    # =========================
+    # ========================================================
+    # NEW AI QUIZ
+    # ========================================================
+
+    application.add_handler(
+        CommandHandler("quiz", quiz)
+    )
+
+    # Subject buttons
+    application.add_handler(
+        CallbackQueryHandler(
+            quiz_subject,
+            pattern=r"^quiz_subject:"
+        )
+    )
+
+    # Difficulty buttons
+    application.add_handler(
+        CallbackQueryHandler(
+            quiz_difficulty,
+            pattern=r"^quiz_difficulty:"
+        )
+    )
+
+    # Next question
+    application.add_handler(
+        CallbackQueryHandler(
+            quiz_next,
+            pattern=r"^quiz_next$"
+        )
+    )
+
+    # Stop quiz
+    application.add_handler(
+        CallbackQueryHandler(
+            quiz_stop,
+            pattern=r"^quiz_stop$"
+        )
+    )
+
+    # Close quiz
+    application.add_handler(
+        CallbackQueryHandler(
+            quiz_close,
+            pattern=r"^quiz_close$"
+        )
+    )
+
+    # Back to subjects
+    application.add_handler(
+        CallbackQueryHandler(
+            quiz_back_subjects,
+            pattern=r"^quiz_back_subjects$"
+        )
+    )
+
+    # Telegram poll answers
+    application.add_handler(
+        PollAnswerHandler(quiz_answer)
+    )
+
+    # ========================================================
     # MODERATOR COMMANDS
-    # =========================
+    # ========================================================
 
     moderator_commands = {
 
-        # Panel
         "modhelp": modhelp,
         "modpanel": moderator_panel,
 
-        # Basic moderation
         "ban": ban,
         "unban": unban,
         "kick": kick,
@@ -304,7 +421,6 @@ def main():
         "clearwarns": clearwarns,
         "softban": softban,
 
-        # Message control
         "del": delete_message,
         "purge": purge,
         "purgeuser": purgeuser,
@@ -316,7 +432,6 @@ def main():
         "flood": flood,
         "antiflood": antiflood,
 
-        # Chat security
         "lock": lock,
         "unlock": unlock,
         "lockall": lockall,
@@ -328,7 +443,6 @@ def main():
         "locksticker": locksticker,
         "unlocksticker": unlocksticker,
 
-        # Link control
         "antilink": antilink,
         "allowlink": allowlink,
         "blocklink": blocklink,
@@ -339,7 +453,6 @@ def main():
         "deldomain": deldomain,
         "cleardomains": cleardomains,
 
-        # User management
         "userinfo": userinfo,
         "id": user_id,
         "admins": admins,
@@ -351,7 +464,6 @@ def main():
         "demote": demote,
         "checkmod": checkmod,
 
-        # Warning system
         "warnlist": warnlist,
         "reason": reason,
         "setwarnlimit": setwarnlimit,
@@ -363,7 +475,6 @@ def main():
         "autoban": autoban,
         "autokick": autokick,
 
-        # Anti-bot / anti-raid
         "antibot": antibot,
         "botcheck": botcheck,
         "botmode": botmode,
@@ -375,7 +486,6 @@ def main():
         "unraid": unraid,
         "joinprotect": joinprotect,
 
-        # Moderation actions
         "announce": announce,
         "notice": notice,
         "rules": rules,
@@ -387,7 +497,6 @@ def main():
         "reports": reports,
         "reportslist": reportslist,
 
-        # Moderator tools
         "modstats": modstats,
         "log": log,
         "logs": logs,
@@ -399,7 +508,6 @@ def main():
         "topmods": topmods,
         "actionlog": actionlog,
 
-        # Advanced
         "slowmode": slowmode,
         "unslowmode": unslowmode,
         "setslowmode": setslowmode,
@@ -412,34 +520,39 @@ def main():
 
     for command, handler in moderator_commands.items():
         application.add_handler(
-            CommandHandler(command, handler)
+            CommandHandler(
+                command,
+                handler
+            )
         )
 
-    # =========================
-    # GAME ANSWERS
-    # =========================
+    # ========================================================
+    # GUESS GAME ANSWERS
+    # ========================================================
 
     application.add_handler(
         MessageHandler(
-            filters.TEXT & ~filters.COMMAND,
+            filters.TEXT
+            & ~filters.COMMAND,
             guess_answer
         )
     )
 
-    # =========================
+    # ========================================================
     # AI CHAT
-    # =========================
+    # ========================================================
 
     application.add_handler(
         MessageHandler(
-            filters.TEXT & ~filters.COMMAND,
+            filters.TEXT
+            & ~filters.COMMAND,
             ai_chat
         )
     )
 
-    # =========================
+    # ========================================================
     # ERROR HANDLER
-    # =========================
+    # ========================================================
 
     application.add_error_handler(
         error_handler
