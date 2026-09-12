@@ -1,20 +1,25 @@
 import os
 import logging
 
+from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import (
     Application,
     CommandHandler,
+    MessageHandler,
     ContextTypes,
+    filters,
 )
 
 from database import init_db, add_user, get_user_count
+from handlers.ai import ai_chat
 
+load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 if not BOT_TOKEN:
-    raise RuntimeError("BOT_TOKEN environment variable is missing.")
+    raise RuntimeError("BOT_TOKEN is missing from .env")
 
 
 logging.basicConfig(
@@ -34,51 +39,23 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         user.first_name
     )
 
-    message = (
-        f"👋 Welcome {user.first_name}!\n\n"
-        "🤖 *SIMON AI HUB*\n\n"
-        "Your all-in-one Telegram assistant.\n\n"
-        "🤖 AI Tools\n"
-        "🎨 Creative Tools\n"
-        "📚 Education\n"
-        "🎮 Games\n"
-        "🛠 Utilities\n"
-        "👨‍💻 Developer Tools\n"
-        "📁 File Tools\n"
-        "⚙️ Settings\n\n"
-        "🚀 More features coming soon!"
-    )
-
     await update.message.reply_text(
-        message,
-        parse_mode="Markdown"
+        f"👋 Welcome {user.first_name}!\n\n"
+        "🤖 SIMON AI HUB\n\n"
+        "Your all-in-one Telegram AI assistant.\n\n"
+        "💬 Send me any question and I will answer it.\n\n"
+        "🛠 More tools coming soon!"
     )
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🆘 *SIMON AI HUB HELP*\n\n"
+        "🆘 SIMON AI HUB HELP\n\n"
         "/start - Start the bot\n"
         "/help - Show help\n"
-        "/tools - Show available tools\n"
-        "/stats - Show bot statistics\n"
-        "/about - About the bot",
-        parse_mode="Markdown",
-    )
-
-
-async def tools(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "🛠 *SIMON AI HUB TOOLS*\n\n"
-        "🤖 AI Tools\n"
-        "🎨 Creative Tools\n"
-        "📚 Education Tools\n"
-        "🎮 Games\n"
-        "💰 Business Tools\n"
-        "🔐 Developer Tools\n"
-        "📁 File Tools\n\n"
-        "More tools will be added soon 🚀",
-        parse_mode="Markdown",
+        "/stats - Bot statistics\n"
+        "/about - About the bot\n\n"
+        "💬 Or simply send me a message to chat with the AI."
     )
 
 
@@ -86,19 +63,16 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     count = get_user_count()
 
     await update.message.reply_text(
-        f"📊 *SIMON AI HUB STATISTICS*\n\n"
-        f"👥 Total Users: `{count}`",
-        parse_mode="Markdown",
+        f"📊 SIMON AI HUB STATISTICS\n\n"
+        f"👥 Total Users: {count}"
     )
 
 
 async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🤖 *SIMON AI HUB*\n\n"
-        "An all-in-one Telegram bot created by Simon.\n\n"
-        "Powered by Python and designed to provide "
-        "AI, utility, education, developer and creative tools.",
-        parse_mode="Markdown",
+        "🤖 SIMON AI HUB\n\n"
+        "An all-in-one Telegram AI bot created by Simon.\n\n"
+        "🚀 Powered by Python + OpenAI."
     )
 
 
@@ -116,9 +90,16 @@ def main():
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("tools", tools))
     application.add_handler(CommandHandler("stats", stats))
     application.add_handler(CommandHandler("about", about))
+
+    # Real AI chat
+    application.add_handler(
+        MessageHandler(
+            filters.TEXT & ~filters.COMMAND,
+            ai_chat
+        )
+    )
 
     application.add_error_handler(error_handler)
 
