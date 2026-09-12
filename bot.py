@@ -13,6 +13,14 @@ from telegram.ext import (
 
 from database import init_db, add_user, get_user_count
 from handlers.ai import ai_chat
+from handlers.games import (
+    games_menu,
+    dice,
+    dart,
+    quiz,
+    guess,
+    guess_answer,
+)
 
 load_dotenv()
 
@@ -43,8 +51,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"👋 Welcome {user.first_name}!\n\n"
         "🤖 SIMON AI HUB\n\n"
         "Your all-in-one Telegram AI assistant.\n\n"
-        "💬 Send me any question and I will answer it.\n\n"
-        "🛠 More tools coming soon!"
+        "💬 Send me a message to chat with the AI.\n"
+        "🎮 Use /games to play games.\n\n"
+        "🚀 More tools coming soon!"
     )
 
 
@@ -54,8 +63,13 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/start - Start the bot\n"
         "/help - Show help\n"
         "/stats - Bot statistics\n"
-        "/about - About the bot\n\n"
-        "💬 Or simply send me a message to chat with the AI."
+        "/about - About the bot\n"
+        "/games - Games\n"
+        "/dice - Roll dice\n"
+        "/dart - Throw dart\n"
+        "/quiz - Play quiz\n"
+        "/guess - Guess the number\n\n"
+        "💬 Send a normal message to chat with the AI."
     )
 
 
@@ -88,12 +102,28 @@ def main():
 
     application = Application.builder().token(BOT_TOKEN).build()
 
+    # Main commands
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("stats", stats))
     application.add_handler(CommandHandler("about", about))
 
-    # Real AI chat
+    # Games
+    application.add_handler(CommandHandler("games", games_menu))
+    application.add_handler(CommandHandler("dice", dice))
+    application.add_handler(CommandHandler("dart", dart))
+    application.add_handler(CommandHandler("quiz", quiz))
+    application.add_handler(CommandHandler("guess", guess))
+
+    # Game answers
+    application.add_handler(
+        MessageHandler(
+            filters.TEXT & ~filters.COMMAND,
+            guess_answer
+        )
+    )
+
+    # AI chat
     application.add_handler(
         MessageHandler(
             filters.TEXT & ~filters.COMMAND,
