@@ -21,6 +21,7 @@ from handlers.games import (
     guess,
     guess_answer,
 )
+from handlers.admin import owner
 
 load_dotenv()
 
@@ -52,7 +53,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🤖 SIMON AI HUB\n\n"
         "Your all-in-one Telegram AI assistant.\n\n"
         "💬 Send me a message to chat with the AI.\n"
-        "🎮 Use /games to play games.\n\n"
+        "🎮 Use /games to play games.\n"
+        "👑 Use /owner to see the bot owner.\n\n"
         "🚀 More tools coming soon!"
     )
 
@@ -64,6 +66,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/help - Show help\n"
         "/stats - Bot statistics\n"
         "/about - About the bot\n"
+        "/owner - Bot owner\n"
         "/games - Games\n"
         "/dice - Roll dice\n"
         "/dart - Throw dart\n"
@@ -85,7 +88,8 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "🤖 SIMON AI HUB\n\n"
-        "An all-in-one Telegram AI bot created by Simon.\n\n"
+        "An all-in-one Telegram AI bot created by Simon Tech.\n\n"
+        "👨‍💻 Developer: @mrdarkdev\n"
         "🚀 Powered by Python + OpenAI."
     )
 
@@ -107,6 +111,7 @@ def main():
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("stats", stats))
     application.add_handler(CommandHandler("about", about))
+    application.add_handler(CommandHandler("owner", owner))
 
     # Games
     application.add_handler(CommandHandler("games", games_menu))
