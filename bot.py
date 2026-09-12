@@ -8,18 +8,14 @@ from telegram.ext import (
     ContextTypes,
 )
 
-# =========================
-# CONFIGURATION
-# =========================
+from database import init_db, add_user, get_user_count
+
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN environment variable is missing.")
 
-# =========================
-# LOGGING
-# =========================
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -28,18 +24,20 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# =========================
-# START COMMAND
-# =========================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
+
+    add_user(
+        user.id,
+        user.username,
+        user.first_name
+    )
 
     message = (
         f"👋 Welcome {user.first_name}!\n\n"
         "🤖 *SIMON AI HUB*\n\n"
         "Your all-in-one Telegram assistant.\n\n"
-        "Choose what you want to do:\n\n"
         "🤖 AI Tools\n"
         "🎨 Creative Tools\n"
         "📚 Education\n"
@@ -56,9 +54,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown"
     )
 
-# =========================
-# HELP COMMAND
-# =========================
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -66,13 +61,11 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/start - Start the bot\n"
         "/help - Show help\n"
         "/tools - Show available tools\n"
+        "/stats - Show bot statistics\n"
         "/about - About the bot",
         parse_mode="Markdown",
     )
 
-# =========================
-# TOOLS COMMAND
-# =========================
 
 async def tools(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -88,9 +81,16 @@ async def tools(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown",
     )
 
-# =========================
-# ABOUT COMMAND
-# =========================
+
+async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    count = get_user_count()
+
+    await update.message.reply_text(
+        f"📊 *SIMON AI HUB STATISTICS*\n\n"
+        f"👥 Total Users: `{count}`",
+        parse_mode="Markdown",
+    )
+
 
 async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -101,9 +101,6 @@ async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown",
     )
 
-# =========================
-# ERROR HANDLER
-# =========================
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     logger.error(
@@ -111,16 +108,16 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
         exc_info=context.error
     )
 
-# =========================
-# MAIN
-# =========================
 
 def main():
+    init_db()
+
     application = Application.builder().token(BOT_TOKEN).build()
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("tools", tools))
+    application.add_handler(CommandHandler("stats", stats))
     application.add_handler(CommandHandler("about", about))
 
     application.add_error_handler(error_handler)
