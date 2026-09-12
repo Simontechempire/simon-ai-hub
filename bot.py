@@ -23,6 +23,108 @@ from handlers.games import (
 )
 from handlers.admin import owner
 
+from handlers.moderator import (
+    moderator_panel,
+    modhelp,
+    ban,
+    unban,
+    kick,
+    mute,
+    unmute,
+    warn,
+    unwarn,
+    warnings,
+    clearwarns,
+    softban,
+    delete_message,
+    purge,
+    purgeuser,
+    clear,
+    pin,
+    unpin,
+    antispam,
+    spam,
+    flood,
+    antiflood,
+    lock,
+    unlock,
+    lockall,
+    unlockall,
+    lockmedia,
+    unlockmedia,
+    locklinks,
+    unlocklinks,
+    locksticker,
+    unlocksticker,
+    antilink,
+    allowlink,
+    blocklink,
+    whitelist,
+    unwhitelist,
+    domains,
+    adddomain,
+    deldomain,
+    cleardomains,
+    userinfo,
+    user_id,
+    admins,
+    mods,
+    modlist,
+    addmod,
+    delmod,
+    promote,
+    demote,
+    checkmod,
+    warnlist,
+    reason,
+    setwarnlimit,
+    warnlimit,
+    resetwarn,
+    warning,
+    warningset,
+    warnmode,
+    autoban,
+    autokick,
+    antibot,
+    botcheck,
+    botmode,
+    captcha,
+    verify,
+    unverify,
+    raidmode,
+    raid,
+    unraid,
+    joinprotect,
+    announce,
+    notice,
+    rules,
+    setrules,
+    modnote,
+    note,
+    notes,
+    report,
+    reports,
+    reportslist,
+    modstats,
+    log,
+    logs,
+    modlog,
+    setlog,
+    chatstats,
+    userstats,
+    activity,
+    topmods,
+    actionlog,
+    slowmode,
+    unslowmode,
+    setslowmode,
+    approval,
+    approve,
+    disapprove,
+    blacklist,
+    unblacklist,
+)
+
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -39,6 +141,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+# =========================
+# MAIN COMMANDS
+# =========================
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
 
@@ -54,7 +160,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Your all-in-one Telegram AI assistant.\n\n"
         "💬 Send me a message to chat with the AI.\n"
         "🎮 Use /games to play games.\n"
-        "👑 Use /owner to see the bot owner.\n\n"
+        "👑 Use /owner to see the bot owner.\n"
+        "🛡️ Use /modhelp for moderator commands.\n\n"
         "🚀 More tools coming soon!"
     )
 
@@ -66,12 +173,16 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/help - Show help\n"
         "/stats - Bot statistics\n"
         "/about - About the bot\n"
-        "/owner - Bot owner\n"
-        "/games - Games\n"
-        "/dice - Roll dice\n"
-        "/dart - Throw dart\n"
-        "/quiz - Play quiz\n"
-        "/guess - Guess the number\n\n"
+        "/owner - Bot owner\n\n"
+        "🎮 GAMES\n"
+        "/games\n"
+        "/dice\n"
+        "/dart\n"
+        "/quiz\n"
+        "/guess\n\n"
+        "🛡️ MODERATION\n"
+        "/modhelp\n"
+        "/modpanel\n\n"
         "💬 Send a normal message to chat with the AI."
     )
 
@@ -94,33 +205,220 @@ async def about(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
+# =========================
+# ERROR HANDLER
+# =========================
+
+async def error_handler(
+    update: object,
+    context: ContextTypes.DEFAULT_TYPE
+):
     logger.error(
         "Exception while handling an update:",
         exc_info=context.error
     )
 
 
+# =========================
+# MAIN
+# =========================
+
 def main():
+
     init_db()
 
-    application = Application.builder().token(BOT_TOKEN).build()
+    application = (
+        Application
+        .builder()
+        .token(BOT_TOKEN)
+        .build()
+    )
 
-    # Main commands
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("stats", stats))
-    application.add_handler(CommandHandler("about", about))
-    application.add_handler(CommandHandler("owner", owner))
+    # =========================
+    # MAIN COMMANDS
+    # =========================
 
-    # Games
-    application.add_handler(CommandHandler("games", games_menu))
-    application.add_handler(CommandHandler("dice", dice))
-    application.add_handler(CommandHandler("dart", dart))
-    application.add_handler(CommandHandler("quiz", quiz))
-    application.add_handler(CommandHandler("guess", guess))
+    application.add_handler(
+        CommandHandler("start", start)
+    )
 
-    # Game answers
+    application.add_handler(
+        CommandHandler("help", help_command)
+    )
+
+    application.add_handler(
+        CommandHandler("stats", stats)
+    )
+
+    application.add_handler(
+        CommandHandler("about", about)
+    )
+
+    application.add_handler(
+        CommandHandler("owner", owner)
+    )
+
+    # =========================
+    # GAMES
+    # =========================
+
+    application.add_handler(
+        CommandHandler("games", games_menu)
+    )
+
+    application.add_handler(
+        CommandHandler("dice", dice)
+    )
+
+    application.add_handler(
+        CommandHandler("dart", dart)
+    )
+
+    application.add_handler(
+        CommandHandler("quiz", quiz)
+    )
+
+    application.add_handler(
+        CommandHandler("guess", guess)
+    )
+
+    # =========================
+    # MODERATOR COMMANDS
+    # =========================
+
+    moderator_commands = {
+
+        # Panel
+        "modhelp": modhelp,
+        "modpanel": moderator_panel,
+
+        # Basic moderation
+        "ban": ban,
+        "unban": unban,
+        "kick": kick,
+        "mute": mute,
+        "unmute": unmute,
+        "warn": warn,
+        "unwarn": unwarn,
+        "warnings": warnings,
+        "clearwarns": clearwarns,
+        "softban": softban,
+
+        # Message control
+        "del": delete_message,
+        "purge": purge,
+        "purgeuser": purgeuser,
+        "clear": clear,
+        "pin": pin,
+        "unpin": unpin,
+        "antispam": antispam,
+        "spam": spam,
+        "flood": flood,
+        "antiflood": antiflood,
+
+        # Chat security
+        "lock": lock,
+        "unlock": unlock,
+        "lockall": lockall,
+        "unlockall": unlockall,
+        "lockmedia": lockmedia,
+        "unlockmedia": unlockmedia,
+        "locklinks": locklinks,
+        "unlocklinks": unlocklinks,
+        "locksticker": locksticker,
+        "unlocksticker": unlocksticker,
+
+        # Link control
+        "antilink": antilink,
+        "allowlink": allowlink,
+        "blocklink": blocklink,
+        "whitelist": whitelist,
+        "unwhitelist": unwhitelist,
+        "domains": domains,
+        "adddomain": adddomain,
+        "deldomain": deldomain,
+        "cleardomains": cleardomains,
+
+        # User management
+        "userinfo": userinfo,
+        "id": user_id,
+        "admins": admins,
+        "mods": mods,
+        "modlist": modlist,
+        "addmod": addmod,
+        "delmod": delmod,
+        "promote": promote,
+        "demote": demote,
+        "checkmod": checkmod,
+
+        # Warning system
+        "warnlist": warnlist,
+        "reason": reason,
+        "setwarnlimit": setwarnlimit,
+        "warnlimit": warnlimit,
+        "resetwarn": resetwarn,
+        "warning": warning,
+        "warningset": warningset,
+        "warnmode": warnmode,
+        "autoban": autoban,
+        "autokick": autokick,
+
+        # Anti-bot / anti-raid
+        "antibot": antibot,
+        "botcheck": botcheck,
+        "botmode": botmode,
+        "captcha": captcha,
+        "verify": verify,
+        "unverify": unverify,
+        "raidmode": raidmode,
+        "raid": raid,
+        "unraid": unraid,
+        "joinprotect": joinprotect,
+
+        # Moderation actions
+        "announce": announce,
+        "notice": notice,
+        "rules": rules,
+        "setrules": setrules,
+        "modnote": modnote,
+        "note": note,
+        "notes": notes,
+        "report": report,
+        "reports": reports,
+        "reportslist": reportslist,
+
+        # Moderator tools
+        "modstats": modstats,
+        "log": log,
+        "logs": logs,
+        "modlog": modlog,
+        "setlog": setlog,
+        "chatstats": chatstats,
+        "userstats": userstats,
+        "activity": activity,
+        "topmods": topmods,
+        "actionlog": actionlog,
+
+        # Advanced
+        "slowmode": slowmode,
+        "unslowmode": unslowmode,
+        "setslowmode": setslowmode,
+        "approval": approval,
+        "approve": approve,
+        "disapprove": disapprove,
+        "blacklist": blacklist,
+        "unblacklist": unblacklist,
+    }
+
+    for command, handler in moderator_commands.items():
+        application.add_handler(
+            CommandHandler(command, handler)
+        )
+
+    # =========================
+    # GAME ANSWERS
+    # =========================
+
     application.add_handler(
         MessageHandler(
             filters.TEXT & ~filters.COMMAND,
@@ -128,7 +426,10 @@ def main():
         )
     )
 
-    # AI chat
+    # =========================
+    # AI CHAT
+    # =========================
+
     application.add_handler(
         MessageHandler(
             filters.TEXT & ~filters.COMMAND,
@@ -136,9 +437,17 @@ def main():
         )
     )
 
-    application.add_error_handler(error_handler)
+    # =========================
+    # ERROR HANDLER
+    # =========================
 
-    logger.info("SIMON AI HUB is starting...")
+    application.add_error_handler(
+        error_handler
+    )
+
+    logger.info(
+        "SIMON AI HUB is starting..."
+    )
 
     application.run_polling(
         allowed_updates=Update.ALL_TYPES
