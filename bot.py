@@ -19,6 +19,11 @@ from database import init_db, add_user, get_user_count
 
 from handlers.ai import ai_chat
 
+from handlers.menu import (
+    show_main_menu,
+    menu_router,
+)
+
 from handlers.games import (
     games_menu,
     dice,
@@ -152,7 +157,9 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 if not BOT_TOKEN:
-    raise RuntimeError("BOT_TOKEN is missing from environment variables")
+    raise RuntimeError(
+        "BOT_TOKEN is missing from environment variables"
+    )
 
 
 # ============================================================
@@ -177,6 +184,7 @@ class HealthHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "text/plain")
         self.end_headers()
+
         self.wfile.write(
             b"SIMON AI HUB is running!"
         )
@@ -186,7 +194,10 @@ class HealthHandler(BaseHTTPRequestHandler):
 
 
 def start_health_server():
-    port = int(os.getenv("PORT", "10000"))
+
+    port = int(
+        os.getenv("PORT", "10000")
+    )
 
     server = HTTPServer(
         ("0.0.0.0", port),
@@ -208,6 +219,7 @@ async def start(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
+
     user = update.effective_user
 
     add_user(
@@ -216,16 +228,9 @@ async def start(
         user.first_name
     )
 
-    await update.message.reply_text(
-        f"👋 Welcome {user.first_name}!\n\n"
-        "🤖 SIMON AI HUB\n\n"
-        "Your all-in-one Telegram AI assistant.\n\n"
-        "💬 Send me a message to chat with the AI.\n"
-        "🎮 Use /games for games.\n"
-        "🧠 Use /quiz for the AI quiz.\n"
-        "👑 Use /owner for the bot owner.\n"
-        "🛡️ Use /modhelp for moderator commands.\n\n"
-        "🚀 More tools coming soon!"
+    await show_main_menu(
+        update,
+        context
     )
 
 
@@ -237,11 +242,12 @@ async def help_command(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
+
     await update.message.reply_text(
         "🆘 SIMON AI HUB HELP\n\n"
 
         "🤖 GENERAL\n"
-        "/start - Start the bot\n"
+        "/start - Open main menu\n"
         "/help - Show help\n"
         "/stats - Bot statistics\n"
         "/about - About the bot\n"
@@ -260,7 +266,7 @@ async def help_command(
         "/modhelp - Moderator commands\n"
         "/modpanel - Moderator panel\n\n"
 
-        "💬 Send a normal message to chat with the AI."
+        "💬 Send a message to chat with AI."
     )
 
 
@@ -272,6 +278,7 @@ async def stats(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
+
     count = get_user_count()
 
     await update.message.reply_text(
@@ -288,6 +295,7 @@ async def about(
     update: Update,
     context: ContextTypes.DEFAULT_TYPE
 ):
+
     await update.message.reply_text(
         "🤖 SIMON AI HUB\n\n"
         "An all-in-one Telegram AI bot "
@@ -305,6 +313,7 @@ async def error_handler(
     update: object,
     context: ContextTypes.DEFAULT_TYPE
 ):
+
     logger.error(
         "Exception while handling update:",
         exc_info=context.error
@@ -319,7 +328,10 @@ def main():
 
     init_db()
 
-    # Start Render health server
+    # ========================================================
+    # RENDER HEALTH SERVER
+    # ========================================================
+
     health_thread = threading.Thread(
         target=start_health_server,
         daemon=True
@@ -327,7 +339,10 @@ def main():
 
     health_thread.start()
 
-    # Create Telegram application
+    # ========================================================
+    # TELEGRAM APPLICATION
+    # ========================================================
+
     application = (
         Application
         .builder()
@@ -340,23 +355,38 @@ def main():
     # ========================================================
 
     application.add_handler(
-        CommandHandler("start", start)
+        CommandHandler(
+            "start",
+            start
+        )
     )
 
     application.add_handler(
-        CommandHandler("help", help_command)
+        CommandHandler(
+            "help",
+            help_command
+        )
     )
 
     application.add_handler(
-        CommandHandler("stats", stats)
+        CommandHandler(
+            "stats",
+            stats
+        )
     )
 
     application.add_handler(
-        CommandHandler("about", about)
+        CommandHandler(
+            "about",
+            about
+        )
     )
 
     application.add_handler(
-        CommandHandler("owner", owner)
+        CommandHandler(
+            "owner",
+            owner
+        )
     )
 
     # ========================================================
@@ -364,19 +394,31 @@ def main():
     # ========================================================
 
     application.add_handler(
-        CommandHandler("games", games_menu)
+        CommandHandler(
+            "games",
+            games_menu
+        )
     )
 
     application.add_handler(
-        CommandHandler("dice", dice)
+        CommandHandler(
+            "dice",
+            dice
+        )
     )
 
     application.add_handler(
-        CommandHandler("dart", dart)
+        CommandHandler(
+            "dart",
+            dart
+        )
     )
 
     application.add_handler(
-        CommandHandler("guess", guess)
+        CommandHandler(
+            "guess",
+            guess
+        )
     )
 
     # ========================================================
@@ -384,7 +426,10 @@ def main():
     # ========================================================
 
     application.add_handler(
-        CommandHandler("quiz", quiz)
+        CommandHandler(
+            "quiz",
+            quiz
+        )
     )
 
     application.add_handler(
@@ -430,7 +475,9 @@ def main():
     )
 
     application.add_handler(
-        PollAnswerHandler(quiz_answer)
+        PollAnswerHandler(
+            quiz_answer
+        )
     )
 
     # ========================================================
@@ -438,6 +485,7 @@ def main():
     # ========================================================
 
     moderator_commands = {
+
         "modhelp": modhelp,
         "modpanel": moderator_panel,
 
@@ -446,6 +494,7 @@ def main():
         "kick": kick,
         "mute": mute,
         "unmute": unmute,
+
         "warn": warn,
         "unwarn": unwarn,
         "warnings": warnings,
@@ -456,8 +505,10 @@ def main():
         "purge": purge,
         "purgeuser": purgeuser,
         "clear": clear,
+
         "pin": pin,
         "unpin": unpin,
+
         "antispam": antispam,
         "spam": spam,
         "flood": flood,
@@ -467,18 +518,22 @@ def main():
         "unlock": unlock,
         "lockall": lockall,
         "unlockall": unlockall,
+
         "lockmedia": lockmedia,
         "unlockmedia": unlockmedia,
         "locklinks": locklinks,
         "unlocklinks": unlocklinks,
+
         "locksticker": locksticker,
         "unlocksticker": unlocksticker,
 
         "antilink": antilink,
         "allowlink": allowlink,
         "blocklink": blocklink,
+
         "whitelist": whitelist,
         "unwhitelist": unwhitelist,
+
         "domains": domains,
         "adddomain": adddomain,
         "deldomain": deldomain,
@@ -489,6 +544,7 @@ def main():
         "admins": admins,
         "mods": mods,
         "modlist": modlist,
+
         "addmod": addmod,
         "delmod": delmod,
         "promote": promote,
@@ -500,18 +556,22 @@ def main():
         "setwarnlimit": setwarnlimit,
         "warnlimit": warnlimit,
         "resetwarn": resetwarn,
+
         "warning": warning,
         "warningset": warningset,
         "warnmode": warnmode,
+
         "autoban": autoban,
         "autokick": autokick,
 
         "antibot": antibot,
         "botcheck": botcheck,
         "botmode": botmode,
+
         "captcha": captcha,
         "verify": verify,
         "unverify": unverify,
+
         "raidmode": raidmode,
         "raid": raid,
         "unraid": unraid,
@@ -519,20 +579,25 @@ def main():
 
         "announce": announce,
         "notice": notice,
+
         "rules": rules,
         "setrules": setrules,
+
         "modnote": modnote,
         "note": note,
         "notes": notes,
+
         "report": report,
         "reports": reports,
         "reportslist": reportslist,
 
         "modstats": modstats,
+
         "log": log,
         "logs": logs,
         "modlog": modlog,
         "setlog": setlog,
+
         "chatstats": chatstats,
         "userstats": userstats,
         "activity": activity,
@@ -542,20 +607,41 @@ def main():
         "slowmode": slowmode,
         "unslowmode": unslowmode,
         "setslowmode": setslowmode,
+
         "approval": approval,
         "approve": approve,
         "disapprove": disapprove,
+
         "blacklist": blacklist,
         "unblacklist": unblacklist,
     }
 
     for command, handler in moderator_commands.items():
+
         application.add_handler(
-            CommandHandler(command, handler)
+            CommandHandler(
+                command,
+                handler
+            )
         )
 
     # ========================================================
-    # GUESS GAME
+    # MENU ROUTER
+    # ========================================================
+    #
+    # IMPORTANT:
+    # This MUST be before guess_answer and ai_chat.
+    #
+
+    application.add_handler(
+        MessageHandler(
+            filters.TEXT & ~filters.COMMAND,
+            menu_router
+        )
+    )
+
+    # ========================================================
+    # GUESS GAME ANSWERS
     # ========================================================
 
     application.add_handler(
@@ -588,10 +674,18 @@ def main():
         "SIMON AI HUB is starting..."
     )
 
+    # ========================================================
+    # START POLLING
+    # ========================================================
+
     application.run_polling(
         allowed_updates=Update.ALL_TYPES
     )
 
+
+# ============================================================
+# RUN
+# ============================================================
 
 if __name__ == "__main__":
     main()
