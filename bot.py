@@ -1,5 +1,7 @@
 import os
 import logging
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from dotenv import load_dotenv
 from telegram import Update
@@ -150,9 +152,7 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 if not BOT_TOKEN:
-    raise RuntimeError(
-        "BOT_TOKEN is missing from .env"
-    )
+    raise RuntimeError("BOT_TOKEN is missing from environment variables")
 
 
 # ============================================================
@@ -160,14 +160,44 @@ if not BOT_TOKEN:
 # ============================================================
 
 logging.basicConfig(
-    format=(
-        "%(asctime)s - %(name)s - "
-        "%(levelname)s - %(message)s"
-    ),
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
 )
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================
+# RENDER HEALTH SERVER
+# ============================================================
+
+class HealthHandler(BaseHTTPRequestHandler):
+
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain")
+        self.end_headers()
+        self.wfile.write(
+            b"SIMON AI HUB is running!"
+        )
+
+    def log_message(self, format, *args):
+        return
+
+
+def start_health_server():
+    port = int(os.getenv("PORT", "10000"))
+
+    server = HTTPServer(
+        ("0.0.0.0", port),
+        HealthHandler
+    )
+
+    logger.info(
+        f"Health server listening on port {port}"
+    )
+
+    server.serve_forever()
 
 
 # ============================================================
@@ -276,7 +306,7 @@ async def error_handler(
     context: ContextTypes.DEFAULT_TYPE
 ):
     logger.error(
-        "Exception while handling an update:",
+        "Exception while handling update:",
         exc_info=context.error
     )
 
@@ -289,6 +319,15 @@ def main():
 
     init_db()
 
+    # Start Render health server
+    health_thread = threading.Thread(
+        target=start_health_server,
+        daemon=True
+    )
+
+    health_thread.start()
+
+    # Create Telegram application
     application = (
         Application
         .builder()
@@ -341,14 +380,13 @@ def main():
     )
 
     # ========================================================
-    # NEW AI QUIZ
+    # AI QUIZ
     # ========================================================
 
     application.add_handler(
         CommandHandler("quiz", quiz)
     )
 
-    # Subject buttons
     application.add_handler(
         CallbackQueryHandler(
             quiz_subject,
@@ -356,7 +394,6 @@ def main():
         )
     )
 
-    # Difficulty buttons
     application.add_handler(
         CallbackQueryHandler(
             quiz_difficulty,
@@ -364,7 +401,6 @@ def main():
         )
     )
 
-    # Next question
     application.add_handler(
         CallbackQueryHandler(
             quiz_next,
@@ -372,7 +408,6 @@ def main():
         )
     )
 
-    # Stop quiz
     application.add_handler(
         CallbackQueryHandler(
             quiz_stop,
@@ -380,7 +415,6 @@ def main():
         )
     )
 
-    # Close quiz
     application.add_handler(
         CallbackQueryHandler(
             quiz_close,
@@ -388,7 +422,6 @@ def main():
         )
     )
 
-    # Back to subjects
     application.add_handler(
         CallbackQueryHandler(
             quiz_back_subjects,
@@ -396,7 +429,6 @@ def main():
         )
     )
 
-    # Telegram poll answers
     application.add_handler(
         PollAnswerHandler(quiz_answer)
     )
@@ -406,7 +438,6 @@ def main():
     # ========================================================
 
     moderator_commands = {
-
         "modhelp": modhelp,
         "modpanel": moderator_panel,
 
@@ -520,20 +551,16 @@ def main():
 
     for command, handler in moderator_commands.items():
         application.add_handler(
-            CommandHandler(
-                command,
-                handler
-            )
+            CommandHandler(command, handler)
         )
 
     # ========================================================
-    # GUESS GAME ANSWERS
+    # GUESS GAME
     # ========================================================
 
     application.add_handler(
         MessageHandler(
-            filters.TEXT
-            & ~filters.COMMAND,
+            filters.TEXT & ~filters.COMMAND,
             guess_answer
         )
     )
@@ -544,8 +571,7 @@ def main():
 
     application.add_handler(
         MessageHandler(
-            filters.TEXT
-            & ~filters.COMMAND,
+            filters.TEXT & ~filters.COMMAND,
             ai_chat
         )
     )
